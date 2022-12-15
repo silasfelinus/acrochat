@@ -1,13 +1,21 @@
 var express = require('express');
+var bodyParser = require('body-parser');
 var app = express();
+var http = require('http').Server(app);
+var io = require('socket.io')(http);
+var mongoose = require('mongoose');
+
+app.use(express.static(__dirname));
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({extended: false}));
+
 var server = app.listen(3450, () => {
  console.log('server is running on port', server.address().port);
 });
-app.use(express.static(__dirname));
 
-var mongoose = require('mongoose');
 
-var dbUrl = 'mongodb+srv://silasfelinus:Monlin3141@acrochat.puvgwcc.mongodb.net/?retryWrites=true&w=majority';
+
+var dbUrl = 'mongodb://silasfelinus:Monlin3141@acrochat.puvgwcc.mongodb.net/livechat';
 
 mongoose.connect(dbUrl , (err) => { 
     console.log('mongodb connected',err);
@@ -15,9 +23,8 @@ mongoose.connect(dbUrl , (err) => {
 
  var Message = mongoose.model('Message',{ name : String, message : String})
 
-var bodyParser = require(‘body-parser’)
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({extended: false}))
+
+
 
 app.get('/messages', (req, res) => {
     Message.find({},(err, messages)=> {
@@ -30,6 +37,12 @@ app.get('/messages', (req, res) => {
     message.save((err) =>{
       if(err)
         sendStatus(500);
+      io.emit('message', req.body);
       res.sendStatus(200);
     })
   })
+
+
+  io.on('connection', () =>{
+    console.log('a user is connected')
+   })
